@@ -1,84 +1,14 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'">
   <title>OpenFASTER Workspace Login</title>
   <script src="age.js"></script>
 </head>
 <body>
   <div id="app">Loading...</div>
-  <script>
-  function getWorkspaceId() {
-    return new URLSearchParams(window.location.search).get("workspace");
-  }
-
-  function renderNoWorkspace() {
-    document.getElementById("app").textContent =
-      "Which workspace? Open this page with ?workspace=<workspace-id>.";
-  }
-
-  function renderNoSuchWorkspace(workspaceId) {
-    document.getElementById("app").textContent =
-      "No such workspace: " + workspaceId;
-  }
-
-  function renderLoginForm(workspaceId, onSubmit) {
-    const app = document.getElementById("app");
-    app.textContent = "";
-
-    const heading = document.createElement("p");
-    heading.textContent = "Log in to " + workspaceId;
-    app.appendChild(heading);
-
-    const input = document.createElement("input");
-    input.type = "password";
-    input.placeholder = "Passphrase";
-    app.appendChild(input);
-
-    const button = document.createElement("button");
-    button.textContent = "Log in";
-    app.appendChild(button);
-
-    const error = document.createElement("p");
-    error.id = "error";
-    app.appendChild(error);
-
-    button.addEventListener("click", () => onSubmit(input.value, error));
-  }
-
-  function renderLoggedIn(workspaceId) {
-    document.getElementById("app").textContent = "Logged in to " + workspaceId;
-  }
-
-  async function main() {
-    const workspaceId = getWorkspaceId();
-    if (!workspaceId) {
-      renderNoWorkspace();
-      return;
-    }
-
-    const response = await fetch("rosters/" + workspaceId + ".age");
-    if (!response.ok) {
-      renderNoSuchWorkspace(workspaceId);
-      return;
-    }
-    const ciphertext = new Uint8Array(await response.arrayBuffer());
-
-    renderLoginForm(workspaceId, async (enteredPassphrase, errorEl) => {
-      try {
-        const d = new age.Decrypter();
-        d.addPassphrase(enteredPassphrase);
-        const plaintext = await d.decrypt(ciphertext, "text");
-        const payload = JSON.parse(plaintext);
-        window._workspaceAuthToken = payload.github_token;
-        renderLoggedIn(workspaceId);
-      } catch (e) {
-        errorEl.textContent = "Incorrect passphrase.";
-      }
-    });
-  }
-
-  main();
-  </script>
+  <script src="login.js"></script>
 </body>
 </html>

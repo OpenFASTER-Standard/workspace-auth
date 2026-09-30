@@ -1,0 +1,9 @@
+{
+  "name": "workspace-auth-age-build",
+  "private": true,
+  "description": "Build manifest for regenerating age.js -- not a runnable package, see the repo's README",
+  "dependencies": {
+    "age-encryption": "0.3.1",
+    "esbuild": "^0.28.2"
+  }
+}

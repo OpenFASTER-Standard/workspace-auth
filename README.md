@@ -16,6 +16,12 @@ correct passphrase decrypts the file client-side (via the bundled
 workspace's own content repo, held only in memory for the page's lifetime
 — never `localStorage`, `sessionStorage`, or a cookie.
 
+The passphrase field sets `autocomplete="off"`, but Chromium ignores that
+for its own save-password prompts — if your browser offers to save this
+passphrase, decline; it's a shared group secret distributed via
+Vaultwarden, not a personal credential meant to live in your browser's
+own password store.
+
 ## Roster file format
 
 `rosters/<workspace-id>.age` is the **raw binary** output of
@@ -55,20 +61,38 @@ automation here still bottlenecks on a manual step:
 5. Share the passphrase with the trusted admin group out of band — via
    this ecosystem's existing Vaultwarden org vault, not chat/email.
 
+## Running the tests
+
+```bash
+cd tests
+npm ci
+npx playwright install chromium
+npm test
+```
+
+Runs a real headless Chromium against a local static server (Playwright's
+own `webServer`, port 47173 — see `playwright.config.mjs`'s comment if a
+run ever fails with a startup timeout rather than a test assertion). CI
+(`.github/workflows/test.yml`) runs the same command on every push/PR.
+
 ## Regenerating `age.js`
 
 `age.js` is a committed build artifact (this is a static site — GitHub
 Pages has no build step), bundled from the real
 [`age-encryption`](https://www.npmjs.com/package/age-encryption) npm
 package (`FiloSottile/typage`) via `esbuild`, exactly per that package's
-own documented browser-usage instructions:
+own documented browser-usage instructions. Currently bundled version:
+**`age-encryption` 0.3.1** (pinned, not "latest" — a 150KB minified
+cryptography bundle handling a real GitHub token needs to be reproducible
+and auditable against advisories, not silently drift). The exact build
+manifest is committed at `build/package.json`/`build/package-lock.json`:
 
 ```bash
-mkdir /tmp/age-build && cd /tmp/age-build
-npm init -y
-npm install esbuild age-encryption
+cd build
+npm ci
 npx esbuild --target=es2022 --bundle --minify --outfile=age.js --global-name=age age-encryption
-cp age.js <this repo>/age.js
+cp age.js ../age.js
 ```
 
-Regenerate only when upgrading the `age-encryption` version.
+Only bump the pinned version in `build/package.json` deliberately, and
+update this section's version number to match.
