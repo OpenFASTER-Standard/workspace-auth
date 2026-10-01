@@ -11,7 +11,7 @@ export function App({ workspaceId: _workspaceId }: { workspaceId: string }) {
   const [selected, setSelected] = useState<{ graph: ShapeGraph; nodeShapeIri: string; branch: string } | null>(null)
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4 p-6">
+    <div className="space-y-4">
       {/* Always visible, including in an error state -- "Couldn't load
           this workspace." alone doesn't say which workspace, and that's
           exactly the moment knowing matters most. */}
