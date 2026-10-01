@@ -9,14 +9,24 @@ on:
 jobs:
   playwright:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: tests
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            tests/package-lock.json
+      # The root install is needed too -- the Playwright suite's own
+      # webServer runs `npm run build` from the repo root (see
+      # tests/playwright.config.mjs) to serve a real built dist/, not
+      # tests/'s own dependencies.
       - run: npm ci
+      - run: npm run typecheck
+      - run: npm ci
+        working-directory: tests
       - run: npx playwright install --with-deps chromium
+        working-directory: tests
       - run: npm test
+        working-directory: tests

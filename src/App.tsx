@@ -10,24 +10,30 @@ export function App({ workspaceId: _workspaceId }: { workspaceId: string }) {
 
   const [selected, setSelected] = useState<{ graph: ShapeGraph; nodeShapeIri: string; branch: string } | null>(null)
 
-  if (!selected) {
-    return (
-      <WorkspaceBrowser
-        owner={owner}
-        repo={repo}
-        token={token}
-        onSelect={(graph, nodeShapeIri, branch) => setSelected({ graph, nodeShapeIri, branch })}
-      />
-    )
-  }
   return (
-    <NodeShapeView
-      graph={selected.graph}
-      nodeShapeIri={selected.nodeShapeIri}
-      owner={owner}
-      repo={repo}
-      branch={selected.branch}
-      token={token}
-    />
+    <div>
+      {/* Always visible, including in an error state -- "Couldn't load
+          this workspace." alone doesn't say which workspace, and that's
+          exactly the moment knowing matters most. */}
+      <p>{window._workspaceRepo ?? ""}</p>
+      {!selected ? (
+        <WorkspaceBrowser
+          owner={owner}
+          repo={repo}
+          token={token}
+          onSelect={(graph, nodeShapeIri, branch) => setSelected({ graph, nodeShapeIri, branch })}
+        />
+      ) : (
+        <NodeShapeView
+          graph={selected.graph}
+          nodeShapeIri={selected.nodeShapeIri}
+          owner={owner}
+          repo={repo}
+          branch={selected.branch}
+          token={token}
+          onBack={() => setSelected(null)}
+        />
+      )}
+    </div>
   )
 }

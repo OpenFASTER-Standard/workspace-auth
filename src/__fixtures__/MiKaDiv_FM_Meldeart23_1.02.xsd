@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:fmma23="http://www.itzbund.de/MiKaDiv/FMMa23/1.02"
+  xmlns:fmmabase="http://www.itzbund.de/MiKaDiv/FMMaBase/1.02"
+  xmlns:std="http://www.itzbund.de/MiKaDiv/FMStd/1.02" targetNamespace="http://www.itzbund.de/MiKaDiv/FMMa23/1.02" elementFormDefault="qualified" attributeFormDefault="unqualified">
+  <xs:import namespace="http://www.itzbund.de/MiKaDiv/FMStd/1.02" schemaLocation="./MiKaDiv_FM_Standardtypen_1.02.xsd" />
+  <xs:import namespace="http://www.itzbund.de/MiKaDiv/FMMaBase/1.02" schemaLocation="./MiKaDiv_FM_MeldeartenBasis_1.02.xsd" />
+  <xs:complexType name="Meldeart23">
+    <xs:annotation>
+      <xs:documentation>Meldung nach § 45c Absatz 2 Satz 3 EStG.</xs:documentation>
+    </xs:annotation>
+    <xs:complexContent>
+      <xs:extension base="fmmabase:SelbststaendigeMeldungType">
+        <xs:sequence>
+          <xs:element name="AbgefKapitalertragsteuer" type="std:Dezimal14dot2Type">
+            <xs:annotation>
+              <xs:documentation>Abgeführte Kapitalertragsteuer nach § 44 Absatz 1a EStG.</xs:documentation>
+            </xs:annotation>
+          </xs:element>
+          <xs:element name="AmtlicheOrdnungsnummerListe" type="fmma23:AmtlicheOrdnungsnummerMa23ListeType">
+            <xs:annotation>
+              <xs:documentation>Liste von amtlichen Ordnungsnummern.</xs:documentation>
+            </xs:annotation>
+          </xs:element>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:complexType name="AmtlicheOrdnungsnummerMa23ListeType">
+    <xs:annotation>
+      <xs:documentation>Typ für eine Liste von amtlichen Ordnungsnummern.</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="AOrdNr" type="std:UUIDType" minOccurs="1" maxOccurs="3000">
+        <xs:annotation>
+          <xs:documentation>Amtliche Ordnungsnummer</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

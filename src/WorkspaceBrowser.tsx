@@ -1,10 +1,43 @@
 import { useEffect, useState } from "react"
-import { getNodeShapes, parseShapeGraph, type ShapeGraph } from "@openfaster-standard/shapes"
-import { fetchFile, getDefaultBranch, listShapeFiles, parseNodeShapeIri } from "@openfaster-standard/write-client"
+import { GEN_NS, getNodeShapes, parseShapeGraph, type ShapeGraph } from "@openfaster-standard/shapes"
+import { fetchFile, getDefaultBranch, listShapeFiles, parseNodeShapeIri, slugify } from "@openfaster-standard/write-client"
 
 type ShapeEntry =
-  | { status: "ok"; filePath: string; nodeShapeIri: string; graph: ShapeGraph }
+  | { status: "ok"; filePath: string; nodeShapeIri: string; graph: ShapeGraph; standard: string; shapeName: string }
   | { status: "error"; filePath: string; message: string }
+
+// A node shape whose own real citation's canonical path doesn't match the
+// file it was actually found in -- a stale copy, a rename left behind, or
+// (per the spec's Review Focus) two node shapes whose display label would
+// otherwise collide. Since the label is entirely derived from
+// standard/shapeName, and so is the canonical path, two entries with an
+// identical label can only mean this; surfacing it as its own inline error
+// (never a second, indistinguishable selectable button) is the whole fix.
+// Also guards against a `sh:NodeShape` outside the real OpenFASTER
+// namespace (getNodeShapes matches any vocabulary's NodeShape) and a
+// malformed IRI `parseNodeShapeIri` can't destructure -- neither should
+// take down the rest of the list.
+async function checkCanonicalPath(
+  filePath: string,
+  nodeShapeIri: string,
+): Promise<{ status: "ok"; standard: string; shapeName: string } | { status: "error"; message: string }> {
+  if (!nodeShapeIri.startsWith(GEN_NS)) return { status: "error", message: `${nodeShapeIri}: not a real OpenFASTER node shape IRI.` }
+
+  let standard: string
+  let shapeName: string
+  try {
+    ;({ standard, shapeName } = parseNodeShapeIri(nodeShapeIri))
+  } catch {
+    return { status: "error", message: `${nodeShapeIri}: couldn't parse this node shape IRI.` }
+  }
+  if (!standard || !shapeName) return { status: "error", message: `${nodeShapeIri}: couldn't parse this node shape IRI.` }
+
+  const canonicalPath = `shapes/${await slugify(standard)}/${await slugify(shapeName)}.ttl`
+  if (canonicalPath !== filePath)
+    return { status: "error", message: `This file doesn't match ${standard}/${shapeName}'s own canonical path (${canonicalPath}).` }
+
+  return { status: "ok", standard, shapeName }
+}
 
 export function WorkspaceBrowser({
   owner,
@@ -37,21 +70,28 @@ export function WorkspaceBrowser({
         if (!cancelled) setState({ status: "error" })
         return
       }
-      const entries: ShapeEntry[] = []
-      for (const filePath of listResult.paths) {
-        const file = await fetchFile(owner, repo, filePath, branchResult.branch, token)
-        if (file.status !== "ok") {
-          entries.push({ status: "error", filePath, message: "Couldn't load this file." })
-          continue
-        }
-        try {
-          const graph = parseShapeGraph(file.content)
-          for (const nodeShapeIri of getNodeShapes(graph)) entries.push({ status: "ok", filePath, nodeShapeIri, graph })
-        } catch {
-          entries.push({ status: "error", filePath, message: "Couldn't parse this file." })
-        }
-      }
-      if (!cancelled) setState({ status: "ok", branch: branchResult.branch, entries })
+      const entriesPerFile = await Promise.all(
+        listResult.paths.map(async (filePath): Promise<ShapeEntry[]> => {
+          const file = await fetchFile(owner, repo, filePath, branchResult.branch, token)
+          if (file.status !== "ok") return [{ status: "error", filePath, message: "Couldn't load this file." }]
+          try {
+            const graph = parseShapeGraph(file.content)
+            const fileEntries: ShapeEntry[] = []
+            for (const nodeShapeIri of getNodeShapes(graph)) {
+              const checked = await checkCanonicalPath(filePath, nodeShapeIri)
+              fileEntries.push(
+                checked.status === "ok"
+                  ? { status: "ok", filePath, nodeShapeIri, graph, standard: checked.standard, shapeName: checked.shapeName }
+                  : { status: "error", filePath, message: checked.message },
+              )
+            }
+            return fileEntries
+          } catch {
+            return [{ status: "error", filePath, message: "Couldn't parse this file." }]
+          }
+        }),
+      )
+      if (!cancelled) setState({ status: "ok", branch: branchResult.branch, entries: entriesPerFile.flat() })
     }
     load()
     return () => {
@@ -65,18 +105,23 @@ export function WorkspaceBrowser({
 
   return (
     <ul>
-      {state.entries.map((entry) =>
+      {state.entries.map((entry, index) =>
         entry.status === "error" ? (
-          <li key={entry.filePath}>
+          // Keyed on index, not just filePath -- a single file can yield
+          // more than one error entry (one per malformed node shape it
+          // declares), which would otherwise collide.
+          <li key={`${entry.filePath}#${index}`}>
             {entry.filePath}: {entry.message}
           </li>
         ) : (
-          <li key={entry.nodeShapeIri}>
+          // Keyed on filePath + IRI, not IRI alone -- defense in depth
+          // against two files ever being listed for the same real node
+          // shape (checkCanonicalPath above already prevents this from
+          // happening via the normal path, since only one file can match
+          // a given node shape's own canonical path).
+          <li key={`${entry.filePath}#${entry.nodeShapeIri}`}>
             <button type="button" onClick={() => onSelect(entry.graph, entry.nodeShapeIri, state.branch)}>
-              {(() => {
-                const { standard, shapeName } = parseNodeShapeIri(entry.nodeShapeIri)
-                return `${standard} / ${shapeName}`
-              })()}
+              {entry.standard} / {entry.shapeName}
             </button>
           </li>
         ),

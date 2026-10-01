@@ -1,0 +1,41 @@
+@prefix gen: <https://openfaster.org/ns/generator#> .
+@prefix oa: <http://www.w3.org/ns/oa#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+<https://openfaster.org/ns/generator#MiKaDiv_FM/Meldeart23> a sh:NodeShape ;
+    sh:property <https://openfaster.org/ns/generator#MiKaDiv_FM/Meldeart23/AbgefKapitalertragsteuer>,
+        <https://openfaster.org/ns/generator#MiKaDiv_FM/Meldeart23/AmtlicheOrdnungsnummerListe>,
+        <https://openfaster.org/ns/generator#MiKaDiv_FM/Meldeart23/Doc> .
+
+<https://openfaster.org/ns/generator#MiKaDiv_FM/Meldeart23/AbgefKapitalertragsteuer> a sh:PropertyShape ;
+    prov:wasDerivedFrom <https://openfaster.org/ns/generator#MiKaDiv_FM/Meldeart23/AbgefKapitalertragsteuer/annotation> ;
+    sh:path <https://openfaster.org/ns/generator#MiKaDiv_FM/Meldeart23/AbgefKapitalertragsteuer/path> ;
+    gen:contentHash "sha256:e0b46cea4b95eeb5b9daac222983ff350ea500d23e3036681428053d64a7d161" .
+
+<https://openfaster.org/ns/generator#MiKaDiv_FM/Meldeart23/AbgefKapitalertragsteuer/annotation> a oa:Annotation ;
+    oa:hasTarget [ oa:hasSelector [ a oa:XPathSelector ;
+                    rdf:value "/xs:schema/xs:complexType[@name='Meldeart23']/xs:complexContent/xs:extension/xs:sequence/xs:element[@name='AbgefKapitalertragsteuer']/xs:annotation/xs:documentation" ] ;
+            oa:hasSource <file:///work/ontologies/mikadiv-fm/sources/1.02/xsd/MiKaDiv_FM_Meldeart23_1.02.xsd> ] .
+
+<https://openfaster.org/ns/generator#MiKaDiv_FM/Meldeart23/AmtlicheOrdnungsnummerListe> a sh:PropertyShape ;
+    prov:wasDerivedFrom <https://openfaster.org/ns/generator#MiKaDiv_FM/Meldeart23/AmtlicheOrdnungsnummerListe/annotation> ;
+    sh:path <https://openfaster.org/ns/generator#MiKaDiv_FM/Meldeart23/AmtlicheOrdnungsnummerListe/path> ;
+    gen:contentHash "sha256:ae1f0492fea98ddb4cd477340258771ecebe33bf9f8cebabfa238913ece5fc69" .
+
+<https://openfaster.org/ns/generator#MiKaDiv_FM/Meldeart23/AmtlicheOrdnungsnummerListe/annotation> a oa:Annotation ;
+    oa:hasTarget [ oa:hasSelector [ a oa:XPathSelector ;
+                    rdf:value "/xs:schema/xs:complexType[@name='Meldeart23']/xs:complexContent/xs:extension/xs:sequence/xs:element[@name='AmtlicheOrdnungsnummerListe']/xs:annotation/xs:documentation" ] ;
+            oa:hasSource <file:///work/ontologies/mikadiv-fm/sources/1.02/xsd/MiKaDiv_FM_Meldeart23_1.02.xsd> ] .
+
+<https://openfaster.org/ns/generator#MiKaDiv_FM/Meldeart23/Doc> a sh:PropertyShape ;
+    prov:wasDerivedFrom <https://openfaster.org/ns/generator#MiKaDiv_FM/Meldeart23/Doc/annotation> ;
+    sh:path <https://openfaster.org/ns/generator#MiKaDiv_FM/Meldeart23/Doc/path> ;
+    gen:contentHash "sha256:ef34fa44d5096f661ec4c2033e07b56ce71bff270f9075fdd857b4a63a8d7120" .
+
+<https://openfaster.org/ns/generator#MiKaDiv_FM/Meldeart23/Doc/annotation> a oa:Annotation ;
+    oa:hasTarget [ oa:hasSelector [ a oa:XPathSelector ;
+                    rdf:value "/xs:schema/xs:complexType[@name='Meldeart23']/xs:annotation/xs:documentation" ] ;
+            oa:hasSource <file:///work/ontologies/mikadiv-fm/sources/1.02/xsd/MiKaDiv_FM_Meldeart23_1.02.xsd> ] .
+

@@ -1,3 +1,4 @@
+import "@openfaster-standard/ui/style.css"
 import { createRoot } from "react-dom/client"
 import { App } from "./App"
 

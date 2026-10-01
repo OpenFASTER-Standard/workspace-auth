@@ -1,7 +1,10 @@
 import { test, expect } from "@playwright/test";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 
 const FIXTURES = path.resolve(import.meta.dirname, "fixtures");
+const REAL_XSD = readFileSync(path.resolve(import.meta.dirname, "../src/__fixtures__/MiKaDiv_FM_Meldeart23_1.02.xsd"), "utf8");
+const REAL_TURTLE = readFileSync(path.resolve(import.meta.dirname, "../src/__fixtures__/meldeart23.ttl"), "utf8");
 
 test("correct passphrase decrypts the roster and shows logged-in state", async ({ page }) => {
   await page.route("**/rosters/test-workspace.age", (route) =>
@@ -121,4 +124,44 @@ test("a real, un-mocked fetch of a committed roster file logs in (no page.route 
   // to commit to.
   const workspaceRepo = await page.evaluate(() => window._workspaceRepo);
   expect(workspaceRepo).toBe("OpenFASTER-Standard/test-workspace-real");
+});
+
+test("a logged-in admin sees the real node shape and its real resolved citation values", async ({ page }) => {
+  // The only proof, before this test, that the real built app (not a
+  // jsdom-mounted component in isolation) actually renders real content
+  // was a manual, ephemeral verification run against the live GitHub API
+  // (see docs/plans/2026-10-01-workspace-app.md Task 4 Step 7) -- nothing
+  // guarded this going forward. This test closes that gap with
+  // page.route, using the same real, public, non-secret Turtle/XSD
+  // fixtures the component tests already use, under the existing fake
+  // fixture token (never a live credential).
+  await page.route("https://api.github.com/**", (route) => {
+    const url = route.request().url();
+    if (url === "https://api.github.com/repos/OpenFASTER-Standard/test-workspace-real")
+      return route.fulfill({ json: { default_branch: "main" } });
+    if (url.includes("/git/trees/main"))
+      return route.fulfill({
+        json: { tree: [{ path: "shapes/mikadiv-fm-fb3a934d/meldeart23-0f68f206.ttl", type: "blob" }] },
+      });
+    if (url.includes("/contents/shapes/mikadiv-fm-fb3a934d/meldeart23-0f68f206.ttl"))
+      return route.fulfill({ json: { content: Buffer.from(REAL_TURTLE, "utf8").toString("base64"), sha: "fixture-sha" } });
+    if (url === "https://api.github.com/repos/OpenFASTER-Standard/ontologies")
+      return route.fulfill({ json: { default_branch: "main" } });
+    return route.fulfill({ status: 404, json: {} });
+  });
+  await page.route("https://raw.githubusercontent.com/OpenFASTER-Standard/ontologies/main/**", (route) =>
+    route.fulfill({ body: REAL_XSD, contentType: "application/xml" })
+  );
+
+  await page.goto("/index.html?workspace=test-workspace-real");
+  await page.fill("input[type=password]", "test-fixture-passphrase-not-a-real-secret");
+  await page.click("button");
+
+  await page.getByRole("button", { name: /MiKaDiv_FM.*Meldeart23/ }).click();
+  // Playwright has no getByDisplayValue (a Testing-Library-only API) --
+  // these are readonly <input>s, so the resolved value is the `value`
+  // attribute, matched via a plain CSS attribute selector.
+  await expect(page.locator('input[value="Meldung nach § 45c Absatz 2 Satz 3 EStG."]')).toBeVisible();
+  await expect(page.locator('input[value="Abgeführte Kapitalertragsteuer nach § 44 Absatz 1a EStG."]')).toBeVisible();
+  await expect(page.locator('input[value="Liste von amtlichen Ordnungsnummern."]')).toBeVisible();
 });

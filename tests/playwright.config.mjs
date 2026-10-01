@@ -14,7 +14,8 @@ export default defineConfig({
     // as written in the repo is raw TSX/JSX, which no browser can execute
     // directly; dist/'s own build step already copies age.js/login.js/
     // rosters/ alongside the compiled bundle, so nothing else changes).
-    command: `cd .. && npm run build && cd tests && python3 -m http.server ${PORT} --directory ../dist`,
+    command: `npm run build && python3 -m http.server ${PORT} --directory dist`,
+    cwd: "..",
     url: `http://127.0.0.1:${PORT}/index.html?workspace=nonexistent`,
     reuseExistingServer: false,
   },
