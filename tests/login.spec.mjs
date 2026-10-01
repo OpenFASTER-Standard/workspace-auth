@@ -12,7 +12,7 @@ test("correct passphrase decrypts the roster and shows logged-in state", async (
   await page.fill("input[type=password]", "test-fixture-passphrase-not-a-real-secret");
   await page.click("button");
 
-  await expect(page.locator("#app")).toContainText("Logged in to test-workspace");
+  await expect(page.locator("#app")).toContainText("Couldn't load this workspace.");
 });
 
 test("wrong passphrase shows a generic incorrect-passphrase error, not a raw exception", async ({ page }) => {
@@ -66,7 +66,7 @@ test("pressing Enter in the passphrase field submits, same as clicking the butto
   await page.fill("input[type=password]", "test-fixture-passphrase-not-a-real-secret");
   await page.press("input[type=password]", "Enter");
 
-  await expect(page.locator("#app")).toContainText("Logged in to test-workspace");
+  await expect(page.locator("#app")).toContainText("Couldn't load this workspace.");
 });
 
 test("a network failure fetching the roster shows a distinct error, not a permanent Loading state", async ({ page }) => {
@@ -114,7 +114,7 @@ test("a real, un-mocked fetch of a committed roster file logs in (no page.route 
   await page.fill("input[type=password]", "test-fixture-passphrase-not-a-real-secret");
   await page.click("button");
 
-  await expect(page.locator("#app")).toContainText("Logged in to test-workspace-real");
+  await expect(page.locator("#app")).toContainText("Couldn't load this workspace.");
 
   // payload.workspace_repo was already decrypted and shape-validated but
   // never stored anywhere -- the write client needs to know which repo

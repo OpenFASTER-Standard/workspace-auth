@@ -9,7 +9,12 @@ const PORT = 47173;
 export default defineConfig({
   testDir: ".",
   webServer: {
-    command: `python3 -m http.server ${PORT} --directory ..`,
+    // Serves the BUILT dist/ output, not the repo root -- index.html's
+    // real entry point is a bundled, module-compiled script (/src/main.tsx
+    // as written in the repo is raw TSX/JSX, which no browser can execute
+    // directly; dist/'s own build step already copies age.js/login.js/
+    // rosters/ alongside the compiled bundle, so nothing else changes).
+    command: `cd .. && npm run build && cd tests && python3 -m http.server ${PORT} --directory ../dist`,
     url: `http://127.0.0.1:${PORT}/index.html?workspace=nonexistent`,
     reuseExistingServer: false,
   },
