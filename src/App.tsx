@@ -1,5 +1,6 @@
 import { useState } from "react"
 import type { ShapeGraph } from "@openfaster-standard/shapes"
+import { NodeShapeView } from "./NodeShapeView"
 import { WorkspaceBrowser } from "./WorkspaceBrowser"
 
 export function App({ workspaceId: _workspaceId }: { workspaceId: string }) {
@@ -7,7 +8,7 @@ export function App({ workspaceId: _workspaceId }: { workspaceId: string }) {
   const repo = (window._workspaceRepo ?? "").split("/")[1]
   const token = window._workspaceAuthToken ?? ""
 
-  const [selected, setSelected] = useState<{ graph: ShapeGraph; nodeShapeIri: string } | null>(null)
+  const [selected, setSelected] = useState<{ graph: ShapeGraph; nodeShapeIri: string; branch: string } | null>(null)
 
   if (!selected) {
     return (
@@ -15,9 +16,18 @@ export function App({ workspaceId: _workspaceId }: { workspaceId: string }) {
         owner={owner}
         repo={repo}
         token={token}
-        onSelect={(graph, nodeShapeIri) => setSelected({ graph, nodeShapeIri })}
+        onSelect={(graph, nodeShapeIri, branch) => setSelected({ graph, nodeShapeIri, branch })}
       />
     )
   }
-  return <div>viewing {selected.nodeShapeIri} (Task 4 replaces this with NodeShapeView)</div>
+  return (
+    <NodeShapeView
+      graph={selected.graph}
+      nodeShapeIri={selected.nodeShapeIri}
+      owner={owner}
+      repo={repo}
+      branch={selected.branch}
+      token={token}
+    />
+  )
 }
