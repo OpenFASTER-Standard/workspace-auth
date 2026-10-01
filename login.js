@@ -95,7 +95,16 @@ function renderLoginForm(workspaceId, onSubmit) {
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    onSubmit(input.value, error);
+    button.disabled = true;
+    button.textContent = "Logging in…";
+    error.textContent = "";
+    onSubmit(input.value, error).finally(() => {
+      // On success this element is already gone (renderLoggedIn replaces
+      // #app's whole content via React) -- setting properties on a
+      // detached node is a harmless no-op, not an error.
+      button.disabled = false;
+      button.textContent = "Log in";
+    });
   });
 }
 

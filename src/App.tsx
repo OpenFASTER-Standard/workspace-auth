@@ -1,5 +1,6 @@
 import { useState } from "react"
 import type { ShapeGraph } from "@openfaster-standard/shapes"
+import { Button } from "@openfaster-standard/ui"
 import { NodeShapeView } from "./NodeShapeView"
 import { WorkspaceBrowser } from "./WorkspaceBrowser"
 
@@ -15,7 +16,25 @@ export function App({ workspaceId: _workspaceId }: { workspaceId: string }) {
       {/* Always visible, including in an error state -- "Couldn't load
           this workspace." alone doesn't say which workspace, and that's
           exactly the moment knowing matters most. */}
-      <p className="text-sm text-muted-foreground">{window._workspaceRepo ?? ""}</p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">{window._workspaceRepo ?? ""}</p>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            // The token/repo are held only in memory for the page's
+            // lifetime (never localStorage/sessionStorage/a cookie) --
+            // logging out is exactly: forget them and reload, which
+            // naturally re-runs login.js's own main() and re-prompts for
+            // the passphrase.
+            delete window._workspaceAuthToken
+            delete window._workspaceRepo
+            window.location.reload()
+          }}
+        >
+          Log out
+        </Button>
+      </div>
       {!selected ? (
         <WorkspaceBrowser
           owner={owner}

@@ -21,4 +21,26 @@ describe("App", () => {
     await waitFor(() => expect(screen.getByText("Couldn't load this workspace.")).toBeInTheDocument())
     expect(screen.getByText("OpenFASTER-Standard/test-workspace-real")).toBeInTheDocument()
   })
+
+  it("shows a Log out button that clears the in-memory credential and reloads the page", async () => {
+    // The token/repo are held only in memory for the page's lifetime (the
+    // whole point of this app's security model -- never localStorage,
+    // sessionStorage, or a cookie), so "log out" is exactly: forget them
+    // and reload, which naturally re-runs login.js's own main() and
+    // re-prompts for the passphrase.
+    window._workspaceRepo = "OpenFASTER-Standard/test-workspace-real"
+    window._workspaceAuthToken = "fake-token"
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ status: 401, json: () => Promise.resolve({}) }))
+    const reload = vi.fn()
+    vi.stubGlobal("location", { ...window.location, reload })
+
+    render(<App workspaceId="test-workspace-real" />)
+    await waitFor(() => expect(screen.getByText("Couldn't load this workspace.")).toBeInTheDocument())
+
+    screen.getByRole("button", { name: "Log out" }).click()
+
+    expect(window._workspaceAuthToken).toBeUndefined()
+    expect(window._workspaceRepo).toBeUndefined()
+    expect(reload).toHaveBeenCalledTimes(1)
+  })
 })

@@ -18,6 +18,33 @@ test("correct passphrase decrypts the roster and shows logged-in state", async (
   await expect(page.locator("#app")).toContainText("Couldn't load this workspace.");
 });
 
+test("the Log in button shows a real loading state while decrypting, not a silently unresponsive click", async ({ page }) => {
+  await page.route("**/rosters/test-workspace.age", (route) =>
+    route.fulfill({ path: path.join(FIXTURES, "test-workspace.age") })
+  );
+  await page.goto("/index.html?workspace=test-workspace");
+
+  // The real passphrase KDF is fast enough on this fixture that the
+  // loading state would already be gone before this test could observe
+  // it -- artificially slow down the one real async step (age.js's own
+  // Decrypter.decrypt, already loaded and defined by the time goto
+  // resolves) so the test proves the UI reacts during a slow decrypt,
+  // without the real implementation needing an artificial delay.
+  await page.evaluate(() => {
+    const realDecrypt = age.Decrypter.prototype.decrypt;
+    age.Decrypter.prototype.decrypt = async function (...args) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      return realDecrypt.apply(this, args);
+    };
+  });
+
+  await page.fill("input[type=password]", "test-fixture-passphrase-not-a-real-secret");
+  await page.click("button");
+
+  await expect(page.locator("button")).toBeDisabled();
+  await expect(page.locator("button")).toHaveText("Logging in…");
+});
+
 test("wrong passphrase shows a generic incorrect-passphrase error, not a raw exception", async ({ page }) => {
   await page.route("**/rosters/test-workspace.age", (route) =>
     route.fulfill({ path: path.join(FIXTURES, "test-workspace.age") })
