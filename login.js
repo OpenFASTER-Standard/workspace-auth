@@ -101,6 +101,7 @@ async function main() {
         throw new Error("roster payload has the wrong shape");
       }
       window._workspaceAuthToken = payload.github_token;
+      window._workspaceRepo = payload.workspace_repo;
       renderLoggedIn(workspaceId);
     } catch (e) {
       errorEl.textContent = "Incorrect passphrase.";

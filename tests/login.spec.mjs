@@ -115,4 +115,10 @@ test("a real, un-mocked fetch of a committed roster file logs in (no page.route 
   await page.click("button");
 
   await expect(page.locator("#app")).toContainText("Logged in to test-workspace-real");
+
+  // payload.workspace_repo was already decrypted and shape-validated but
+  // never stored anywhere -- the write client needs to know which repo
+  // to commit to.
+  const workspaceRepo = await page.evaluate(() => window._workspaceRepo);
+  expect(workspaceRepo).toBe("OpenFASTER-Standard/test-workspace-real");
 });
