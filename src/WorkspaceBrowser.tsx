@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { GEN_NS, getNodeShapes, parseShapeGraph, type ShapeGraph } from "@openfaster-standard/shapes"
 import { fetchFile, getDefaultBranch, listShapeFiles, parseNodeShapeIri, slugify } from "@openfaster-standard/write-client"
+import { Button } from "@openfaster-standard/ui"
 
 type ShapeEntry =
   | { status: "ok"; filePath: string; nodeShapeIri: string; graph: ShapeGraph; standard: string; shapeName: string }
@@ -99,33 +100,37 @@ export function WorkspaceBrowser({
     }
   }, [owner, repo, token])
 
-  if (state.status === "loading") return <div>Loading…</div>
-  if (state.status === "error") return <div>Couldn't load this workspace.</div>
-  if (state.entries.length === 0) return <div>No node shapes in this workspace yet.</div>
+  if (state.status === "loading") return <p className="text-sm text-muted-foreground">Loading…</p>
+  if (state.status === "error") return <p className="text-sm text-destructive">Couldn't load this workspace.</p>
+  if (state.entries.length === 0)
+    return <p className="text-sm text-muted-foreground">No node shapes in this workspace yet.</p>
 
   return (
-    <ul>
+    <div className="space-y-2">
       {state.entries.map((entry, index) =>
         entry.status === "error" ? (
           // Keyed on index, not just filePath -- a single file can yield
           // more than one error entry (one per malformed node shape it
           // declares), which would otherwise collide.
-          <li key={`${entry.filePath}#${index}`}>
+          <p key={`${entry.filePath}#${index}`} className="text-sm text-destructive">
             {entry.filePath}: {entry.message}
-          </li>
+          </p>
         ) : (
           // Keyed on filePath + IRI, not IRI alone -- defense in depth
           // against two files ever being listed for the same real node
           // shape (checkCanonicalPath above already prevents this from
           // happening via the normal path, since only one file can match
           // a given node shape's own canonical path).
-          <li key={`${entry.filePath}#${entry.nodeShapeIri}`}>
-            <button type="button" onClick={() => onSelect(entry.graph, entry.nodeShapeIri, state.branch)}>
-              {entry.standard} / {entry.shapeName}
-            </button>
-          </li>
+          <Button
+            key={`${entry.filePath}#${entry.nodeShapeIri}`}
+            variant="outline"
+            className="w-full justify-start"
+            onClick={() => onSelect(entry.graph, entry.nodeShapeIri, state.branch)}
+          >
+            {entry.standard} / {entry.shapeName}
+          </Button>
         ),
       )}
-    </ul>
+    </div>
   )
 }

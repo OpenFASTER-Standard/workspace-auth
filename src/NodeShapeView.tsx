@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Button } from "@openfaster-standard/ui"
+import { Alert, AlertDescription, Button, Card, CardContent, CardFooter } from "@openfaster-standard/ui"
 import { getPropertyShapes, parseShapeGraph, ReCitationPicker, ShapeField, type ShapeGraph } from "@openfaster-standard/shapes"
 import {
   commitReCitation,
@@ -83,81 +83,107 @@ export function NodeShapeView({
 
   const propertyShapeIris = getPropertyShapes(graph, nodeShapeIri)
 
-  if (sourcesBranch.status === "loading") return <div>Loading…</div>
-  if (sourcesBranch.status === "error") return <div>Couldn't load this workspace.</div>
+  if (sourcesBranch.status === "loading") return <p className="text-sm text-muted-foreground">Loading…</p>
+  if (sourcesBranch.status === "error") return <p className="text-sm text-destructive">Couldn't load this workspace.</p>
 
   return (
-    <div>
-      <Button onClick={onBack}>Back to node shapes</Button>
-      {propertyShapeIris.map((iri) => (
-        <div key={iri}>
-          <ShapeField propertyShapeIri={iri} graph={graph} resolveSourceUri={resolveSourceUri} />
-          <Button
-            onClick={() => {
-              setEditingPropertyShapeIri(iri)
-              setPendingEdit(null)
-              setCommitResult(null)
-            }}
-          >
-            Edit citation
-          </Button>
-        </div>
-      ))}
+    <div className="space-y-4">
+      <Button variant="ghost" onClick={onBack}>
+        Back to node shapes
+      </Button>
+
+      <div className="space-y-3">
+        {propertyShapeIris.map((iri) => (
+          <Card key={iri}>
+            <CardContent>
+              <ShapeField propertyShapeIri={iri} graph={graph} resolveSourceUri={resolveSourceUri} />
+            </CardContent>
+            <CardFooter>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setEditingPropertyShapeIri(iri)
+                  setPendingEdit(null)
+                  setCommitResult(null)
+                }}
+              >
+                Edit citation
+              </Button>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
 
       {editingPropertyShapeIri && !pendingEdit && (
-        <div>
-          <ReCitationPicker
-            graph={graph}
-            propertyShapeIri={editingPropertyShapeIri}
-            resolveSourceUri={resolveSourceUri}
-            onPendingEdit={setPendingEdit}
-          />
-          <Button onClick={() => setEditingPropertyShapeIri(null)}>Cancel</Button>
-        </div>
+        <Card>
+          <CardContent className="space-y-3">
+            <ReCitationPicker
+              graph={graph}
+              propertyShapeIri={editingPropertyShapeIri}
+              resolveSourceUri={resolveSourceUri}
+              onPendingEdit={setPendingEdit}
+            />
+          </CardContent>
+          <CardFooter>
+            <Button variant="ghost" size="sm" onClick={() => setEditingPropertyShapeIri(null)}>
+              Cancel
+            </Button>
+          </CardFooter>
+        </Card>
       )}
 
       {pendingEdit && (
-        <div>
-          <p>Set this citation to: {pendingEdit.previewValue}</p>
-          <Button
-            onClick={async () => {
-              const result = await commitReCitation(
-                { propertyShapeIri: pendingEdit.propertyShapeIri, newXPath: pendingEdit.newXPath },
-                { token, owner, repo, branch, resolveSourceUri },
-              )
-              setCommitResult(result)
-              setPendingEdit(null)
-              setEditingPropertyShapeIri(null)
-              if (result.status === "committed") {
-                const { standard, shapeName } = parseNodeShapeIri(nodeShapeIri)
-                const path = `shapes/${await slugify(standard)}/${await slugify(shapeName)}.ttl`
-                const file = await fetchFile(owner, repo, path, branch, token)
-                if (file.status === "ok") {
-                  try {
-                    setGraph(parseShapeGraph(file.content))
-                  } catch {
-                    // The commit itself already succeeded -- a malformed
-                    // refetch is a display-only problem, not a reason to
-                    // discard the commit result the admin already saw.
+        <Card>
+          <CardContent>
+            <p className="text-sm">Set this citation to: {pendingEdit.previewValue}</p>
+          </CardContent>
+          <CardFooter className="gap-2">
+            <Button
+              onClick={async () => {
+                const result = await commitReCitation(
+                  { propertyShapeIri: pendingEdit.propertyShapeIri, newXPath: pendingEdit.newXPath },
+                  { token, owner, repo, branch, resolveSourceUri },
+                )
+                setCommitResult(result)
+                setPendingEdit(null)
+                setEditingPropertyShapeIri(null)
+                if (result.status === "committed") {
+                  const { standard, shapeName } = parseNodeShapeIri(nodeShapeIri)
+                  const path = `shapes/${await slugify(standard)}/${await slugify(shapeName)}.ttl`
+                  const file = await fetchFile(owner, repo, path, branch, token)
+                  if (file.status === "ok") {
+                    try {
+                      setGraph(parseShapeGraph(file.content))
+                    } catch {
+                      // The commit itself already succeeded -- a malformed
+                      // refetch is a display-only problem, not a reason to
+                      // discard the commit result the admin already saw.
+                    }
                   }
                 }
-              }
-            }}
-          >
-            Confirm and commit
-          </Button>
-          <Button
-            onClick={() => {
-              setPendingEdit(null)
-              setEditingPropertyShapeIri(null)
-            }}
-          >
-            Cancel
-          </Button>
-        </div>
+              }}
+            >
+              Confirm and commit
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setPendingEdit(null)
+                setEditingPropertyShapeIri(null)
+              }}
+            >
+              Cancel
+            </Button>
+          </CardFooter>
+        </Card>
       )}
 
-      {commitResult && <div>{commitResultMessage(commitResult)}</div>}
+      {commitResult && (
+        <Alert variant={commitResult.status === "committed" ? "default" : "destructive"}>
+          <AlertDescription>{commitResultMessage(commitResult)}</AlertDescription>
+        </Alert>
+      )}
     </div>
   )
 }

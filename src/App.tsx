@@ -11,11 +11,11 @@ export function App({ workspaceId: _workspaceId }: { workspaceId: string }) {
   const [selected, setSelected] = useState<{ graph: ShapeGraph; nodeShapeIri: string; branch: string } | null>(null)
 
   return (
-    <div>
+    <div className="mx-auto max-w-2xl space-y-4 p-6">
       {/* Always visible, including in an error state -- "Couldn't load
           this workspace." alone doesn't say which workspace, and that's
           exactly the moment knowing matters most. */}
-      <p>{window._workspaceRepo ?? ""}</p>
+      <p className="text-sm text-muted-foreground">{window._workspaceRepo ?? ""}</p>
       {!selected ? (
         <WorkspaceBrowser
           owner={owner}
