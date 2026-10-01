@@ -64,7 +64,7 @@ function renderLoginForm(workspaceId, onSubmit) {
 }
 
 function renderLoggedIn(workspaceId) {
-  document.getElementById("app").textContent = "Logged in to " + workspaceId;
+  window.__mountWorkspaceApp(workspaceId);
 }
 
 async function main() {
