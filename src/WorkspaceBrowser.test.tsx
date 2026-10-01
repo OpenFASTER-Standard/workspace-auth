@@ -32,6 +32,20 @@ describe("WorkspaceBrowser", () => {
     await waitFor(() => expect(screen.getByText(/MiKaDiv_FM.*Meldeart23/)).toBeInTheDocument())
   })
 
+  it("shows a heading explaining what the list is, so a first-time admin knows these are clickable", async () => {
+    // Confirmed live (a real screenshot of a logged-in session): a bare
+    // list of outline-variant buttons with no caption looks exactly like
+    // a list of disabled text fields, not navigation -- nothing on the
+    // page said what this was or that clicking an entry does anything.
+    stubGithubApi(
+      { tree: [{ path: "shapes/mikadiv-fm-fb3a934d/meldeart23-0f68f206.ttl", type: "blob" }] },
+      Buffer.from(REAL_TURTLE, "utf8").toString("base64"),
+    )
+    render(<WorkspaceBrowser owner="o" repo="r" token="tok" onSelect={() => {}} />)
+    await waitFor(() => expect(screen.getByText(/MiKaDiv_FM.*Meldeart23/)).toBeInTheDocument())
+    expect(screen.getByText(/node shapes/i)).toBeInTheDocument()
+  })
+
   it("shows a real empty state for a workspace with zero node shapes, not an error or a spinner", async () => {
     stubGithubApi({ tree: [] }, "")
     render(<WorkspaceBrowser owner="o" repo="r" token="tok" onSelect={() => {}} />)

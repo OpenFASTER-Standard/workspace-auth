@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { GEN_NS, getNodeShapes, parseShapeGraph, type ShapeGraph } from "@openfaster-standard/shapes"
 import { fetchFile, getDefaultBranch, listShapeFiles, parseNodeShapeIri, slugify } from "@openfaster-standard/write-client"
 import { Button } from "@openfaster-standard/ui"
+import { ChevronRight } from "lucide-react"
 
 type ShapeEntry =
   | { status: "ok"; filePath: string; nodeShapeIri: string; graph: ShapeGraph; standard: string; shapeName: string }
@@ -107,6 +108,11 @@ export function WorkspaceBrowser({
 
   return (
     <div className="space-y-2">
+      {/* A bare list of outline-variant buttons with no caption reads as
+          a list of disabled text fields, not navigation -- confirmed live,
+          nothing on the page said what this was or that an entry is
+          clickable. */}
+      <p className="text-sm text-muted-foreground">Node shapes</p>
       {state.entries.map((entry, index) =>
         entry.status === "error" ? (
           // Keyed on index, not just filePath -- a single file can yield
@@ -120,14 +126,18 @@ export function WorkspaceBrowser({
           // against two files ever being listed for the same real node
           // shape (checkCanonicalPath above already prevents this from
           // happening via the normal path, since only one file can match
-          // a given node shape's own canonical path).
+          // a given node shape's own canonical path). A trailing chevron
+          // is the standard "this row navigates somewhere" affordance --
+          // without it, an outline button is visually indistinguishable
+          // from a disabled input.
           <Button
             key={`${entry.filePath}#${entry.nodeShapeIri}`}
             variant="outline"
-            className="w-full justify-start"
+            className="w-full justify-between"
             onClick={() => onSelect(entry.graph, entry.nodeShapeIri, state.branch)}
           >
             {entry.standard} / {entry.shapeName}
+            <ChevronRight data-icon="inline-end" className="text-muted-foreground" />
           </Button>
         ),
       )}
