@@ -93,18 +93,37 @@ function renderLoginForm(workspaceId, onSubmit) {
 
   app.appendChild(wrapper);
 
-  form.addEventListener("submit", (event) => {
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
     button.disabled = true;
     button.textContent = "Logging in…";
     error.textContent = "";
-    onSubmit(input.value, error).finally(() => {
+    // age.js's own scrypt-based passphrase KDF is a tight, pure-JS
+    // synchronous loop -- confirmed live, it blocks the main thread for
+    // multiple real seconds with zero yields (a setInterval ticking
+    // during a real decrypt call never fires once). Without forcing a
+    // real paint here first, the two DOM mutations above are queued but
+    // the browser never renders them before that block starts, so the
+    // button looks completely frozen for the KDF's entire duration
+    // instead of showing "Logging in…". A plain setTimeout(0) yield is
+    // NOT enough -- the spec treats a render pass between tasks as
+    // optional, so the browser can (and in testing, does) skip straight
+    // to running the next task without painting first. The double
+    // requestAnimationFrame is the standard, actually-guaranteed way to
+    // force a paint to commit before proceeding: the first rAF fires
+    // right before the next paint (so this mutation is included in it),
+    // and the second rAF only fires after that paint has already
+    // happened.
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    try {
+      await onSubmit(input.value, error);
+    } finally {
       // On success this element is already gone (renderLoggedIn replaces
       // #app's whole content via React) -- setting properties on a
       // detached node is a harmless no-op, not an error.
       button.disabled = false;
       button.textContent = "Log in";
-    });
+    }
   });
 }
 

@@ -18,31 +18,48 @@ test("correct passphrase decrypts the roster and shows logged-in state", async (
   await expect(page.locator("#app")).toContainText("Couldn't load this workspace.");
 });
 
-test("the Log in button shows a real loading state while decrypting, not a silently unresponsive click", async ({ page }) => {
+test("the Log in button forces a real paint (double requestAnimationFrame) before the real, synchronously-blocking decryption starts", async ({ page }) => {
   await page.route("**/rosters/test-workspace.age", (route) =>
     route.fulfill({ path: path.join(FIXTURES, "test-workspace.age") })
   );
   await page.goto("/index.html?workspace=test-workspace");
 
-  // The real passphrase KDF is fast enough on this fixture that the
-  // loading state would already be gone before this test could observe
-  // it -- artificially slow down the one real async step (age.js's own
-  // Decrypter.decrypt, already loaded and defined by the time goto
-  // resolves) so the test proves the UI reacts during a slow decrypt,
-  // without the real implementation needing an artificial delay.
+  // age.js's own scrypt-based KDF blocks the main thread synchronously
+  // for multiple real seconds with zero yields (confirmed live: a
+  // setInterval ticking during a real decrypt call never fires once --
+  // 0 ticks over 1.5s+). Once that block starts, nothing is observable
+  // until it ends: every Playwright API that needs to run JS in the page
+  // (click, textContent, even screenshot) also waits for the main thread
+  // to free up before resolving -- the same constraint a real frozen tab
+  // imposes on a human, which makes asserting the *visual* result from
+  // here fundamentally impossible. This was instead confirmed empirically
+  // via a real video recording (compositor frames, independent of the
+  // above): "Logging in…" renders and stays visible for the whole real
+  // ~3s block. This test guards the mechanism that makes that true: a
+  // real paint must commit (the standard double-requestAnimationFrame
+  // technique -- a single setTimeout(0) is NOT enough, since the spec
+  // treats a render pass between tasks as optional) before decrypt() is
+  // ever called.
   await page.evaluate(() => {
-    const realDecrypt = age.Decrypter.prototype.decrypt;
-    age.Decrypter.prototype.decrypt = async function (...args) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      return realDecrypt.apply(this, args);
+    window.__rafCount = 0;
+    window.__rafCountAtDecrypt = null;
+    const realRaf = window.requestAnimationFrame.bind(window);
+    window.requestAnimationFrame = (cb) => {
+      window.__rafCount++;
+      return realRaf(cb);
+    };
+    age.Decrypter.prototype.decrypt = function () {
+      window.__rafCountAtDecrypt = window.__rafCount;
+      return new Promise(() => {}); // never resolves -- only the call order matters here
     };
   });
 
   await page.fill("input[type=password]", "test-fixture-passphrase-not-a-real-secret");
   await page.click("button");
 
-  await expect(page.locator("button")).toBeDisabled();
-  await expect(page.locator("button")).toHaveText("Logging in…");
+  await page.waitForFunction(() => window.__rafCountAtDecrypt !== null);
+  const rafCountAtDecrypt = await page.evaluate(() => window.__rafCountAtDecrypt);
+  expect(rafCountAtDecrypt).toBeGreaterThanOrEqual(2);
 });
 
 test("wrong passphrase shows a generic incorrect-passphrase error, not a raw exception", async ({ page }) => {
